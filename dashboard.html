@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,14 +10,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #16161a;
-            --card-color: #242629;
-            --text-color: #fffffe;
-            --subtext-color: #94a1b2;
-            --primary: #7f5af0;
-            --secondary: #2cb67d;
-            --danger: #ef4565;
-            --boarder: rgba(255, 255, 255, 0.1);
+            --bg-color: #000000;
+            --card-color: #121212;
+            --text-color: #e0e0e0;
+            --subtext-color: #a0a0a0;
+            --primary: #2962ff;
+            /* Financial Blue */
+            --secondary: #00c853;
+            /* Success Green */
+            --danger: #d50000;
+            /* Failure Red */
+            --boarder: #333333;
         }
 
         * {
@@ -32,8 +36,12 @@
             padding: 20px;
         }
 
-        h1, h2, h3 { margin-bottom: 10px; }
-        
+        h1,
+        h2,
+        h3 {
+            margin-bottom: 10px;
+        }
+
         .dashboard-container {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -60,7 +68,9 @@
             letter-spacing: -0.5px;
         }
 
-        .header span { color: var(--primary); }
+        .header span {
+            color: var(--primary);
+        }
 
         /* CARDS */
         .card {
@@ -68,7 +78,7 @@
             border: 1px solid var(--boarder);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .chart-section {
@@ -93,7 +103,8 @@
             margin-bottom: 8px;
         }
 
-        textarea, input {
+        textarea,
+        input {
             width: 100%;
             background: #1e1e24;
             border: 1px solid var(--boarder);
@@ -103,7 +114,8 @@
             font-family: inherit;
         }
 
-        textarea:focus, input:focus {
+        textarea:focus,
+        input:focus {
             outline: none;
             border-color: var(--primary);
         }
@@ -119,7 +131,9 @@
             transition: opacity 0.2s;
         }
 
-        button:hover { opacity: 0.9; }
+        button:hover {
+            opacity: 0.9;
+        }
 
         /* TABLE */
         .history-list {
@@ -127,7 +141,7 @@
             max-height: 300px;
             overflow-y: auto;
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -146,19 +160,37 @@
             border-bottom: 1px solid var(--boarder);
         }
 
-        .price-up { color: var(--secondary); }
-        .price-down { color: var(--danger); }
+        .price-up {
+            color: var(--secondary);
+        }
+
+        .price-down {
+            color: var(--danger);
+        }
 
         /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: var(--card-color); border-radius: 4px; }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--card-color);
+            border-radius: 4px;
+        }
 
         @media(max-width: 900px) {
-            .dashboard-container { grid-template-columns: 1fr; height: auto; }
+            .dashboard-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="dashboard-container">
@@ -178,7 +210,7 @@
 
         <!-- Right Side: Controls & History -->
         <div class="input-section">
-            
+
             <!-- Data Input -->
             <div class="card">
                 <h3>Analysis Input</h3>
@@ -195,7 +227,7 @@
             <!-- Transaction History -->
             <div class="card" style="flex-grow: 1;">
                 <h3>Transaction History</h3>
-                
+
                 <!-- Simple Add Form -->
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <input type="text" id="transToken" placeholder="SYM" style="width: 80px;">
@@ -242,7 +274,7 @@
         const defaultData = [100, 102, 105, 108, 112, 110, 115, 118, 122, 120, 118, 115, 112, 110, 108, 105];
 
         // --- MATH FUNCTIONS (Simulating C backend) ---
-        
+
         function calculateSMA(data, period) {
             let sma = [];
             for (let i = 0; i < data.length; i++) {
@@ -266,12 +298,12 @@
 
             // First RSI needs 'period' + 1 data points to calculate change
             // We'll just pad the start with nulls
-            for(let i=0; i < data.length; i++) {
+            for (let i = 0; i < data.length; i++) {
                 if (i <= period) {
                     rsi.push(null);
                     continue;
                 }
-                
+
                 // Simple RSI calculation for visualization
                 // Note: Real RSI uses smoothed averages, this is a simplified window
                 /* 
@@ -279,25 +311,25 @@
                  * RS = Avg Gain / Avg Loss
                  * RSI = 100 - (100 / (1 + RS))
                  */
-                 
-                 let avgGain = 0;
-                 let avgLoss = 0;
-                 
-                 for(let j=0; j < period; j++) {
-                     let change = data[i-j] - data[i-j-1];
-                     if(change > 0) avgGain += change;
-                     else avgLoss += Math.abs(change);
-                 }
-                 
-                 avgGain /= period;
-                 avgLoss /= period;
-                 
-                 if (avgLoss === 0) {
-                     rsi.push(100);
-                 } else {
-                     let rs = avgGain / avgLoss;
-                     rsi.push(100 - (100 / (1 + rs)));
-                 }
+
+                let avgGain = 0;
+                let avgLoss = 0;
+
+                for (let j = 0; j < period; j++) {
+                    let change = data[i - j] - data[i - j - 1];
+                    if (change > 0) avgGain += change;
+                    else avgLoss += Math.abs(change);
+                }
+
+                avgGain /= period;
+                avgLoss /= period;
+
+                if (avgLoss === 0) {
+                    rsi.push(100);
+                } else {
+                    let rs = avgGain / avgLoss;
+                    rsi.push(100 - (100 / (1 + rs)));
+                }
             }
             return rsi;
         }
@@ -306,7 +338,7 @@
 
         function initChart() {
             const ctx = document.getElementById('stockChart').getContext('2d');
-            
+
             // Set input default
             document.getElementById('priceInput').value = defaultData.join(', ');
 
@@ -322,17 +354,19 @@
                         {
                             label: 'Stock Price',
                             data: defaultData,
-                            borderColor: '#7f5af0',
-                            backgroundColor: 'rgba(127, 90, 240, 0.1)',
+                            borderColor: '#d50000', // Red for price (like user image downtrend)
+                            backgroundColor: 'rgba(213, 0, 0, 0.1)',
                             borderWidth: 2,
-                            tension: 0.4,
+                            tension: 0.1, // Sharper lines
+                            fill: true,
+                            pointRadius: 0,
                             yAxisID: 'y'
                         },
                         {
                             label: 'SMA (5)',
                             data: sma,
-                            borderColor: '#2cb67d',
-                            borderWidth: 2,
+                            borderColor: '#2962ff',
+                            borderWidth: 1.5,
                             borderDash: [5, 5],
                             pointRadius: 0,
                             yAxisID: 'y'
@@ -340,9 +374,10 @@
                         {
                             label: 'RSI (14)',
                             data: rsi,
-                            borderColor: '#ef4565',
+                            borderColor: '#00c853',
                             borderWidth: 1,
                             pointRadius: 0,
+                            hidden: false,
                             yAxisID: 'y1' // Separate axis for RSI
                         }
                     ]
@@ -356,20 +391,27 @@
                     },
                     plugins: {
                         legend: {
-                            labels: { color: '#94a1b2' }
+                            labels: { color: '#a0a0a0', font: { size: 11 } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e1e1e',
+                            titleColor: '#fff',
+                            bodyColor: '#ccc',
+                            borderColor: '#333',
+                            borderWidth: 1
                         }
                     },
                     scales: {
                         x: {
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#94a1b2' }
+                            grid: { display: false }, // Minimal grid
+                            ticks: { color: '#666', font: { size: 10 } }
                         },
                         y: {
                             type: 'linear',
                             display: true,
                             position: 'left',
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#94a1b2' }
+                            grid: { color: '#222' },
+                            ticks: { color: '#666', font: { size: 10 } }
                         },
                         y1: {
                             type: 'linear',
@@ -377,8 +419,8 @@
                             position: 'right',
                             min: 0,
                             max: 100,
-                            grid: { drawOnChartArea: false }, // only want the grid lines for one axis to show up
-                            ticks: { color: '#ef4565' }
+                            grid: { display: false },
+                            ticks: { color: '#00c853', font: { size: 10 } }
                         },
                     }
                 }
@@ -388,7 +430,7 @@
         function updateGraph() {
             const input = document.getElementById('priceInput').value;
             const dataArr = input.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
-            
+
             if (dataArr.length < 5) {
                 alert("Please enter more data points.");
                 return;
@@ -402,7 +444,7 @@
             myChart.data.datasets[0].data = dataArr;
             myChart.data.datasets[1].data = sma;
             myChart.data.datasets[2].data = rsi;
-            
+
             myChart.update();
         }
 
@@ -414,13 +456,13 @@
 
             const tbody = document.getElementById('transTable');
             const row = document.createElement('tr');
-            
+
             row.innerHTML = `
                 <td><span style="color:var(--secondary)">MANUAL</span></td>
                 <td>${sym}</td>
                 <td style="text-align: right;">${parseFloat(price).toFixed(2)}</td>
             `;
-            
+
             // Add to top
             tbody.insertBefore(row, tbody.firstChild);
 
@@ -432,4 +474,5 @@
         initChart();
     </script>
 </body>
+
 </html>
