@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis Dashboard</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #16161a;
+            --card-color: #242629;
+            --text-color: #fffffe;
+            --subtext-color: #94a1b2;
+            --primary: #7f5af0;
+            --secondary: #2cb67d;
+            --danger: #ef4565;
+            --boarder: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        h1, h2, h3 { margin-bottom: 10px; }
+        
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: 90vh;
+        }
+
+        /* HEADER */
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--boarder);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .header span { color: var(--primary); }
+
+        /* CARDS */
+        .card {
+            background-color: var(--card-color);
+            border: 1px solid var(--boarder);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .chart-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* FORMS & INPUTS */
+        .form-group label {
+            display: block;
+            color: var(--subtext-color);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        textarea, input {
+            width: 100%;
+            background: #1e1e24;
+            border: 1px solid var(--boarder);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: inherit;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        /* TABLE */
+        .history-list {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: left;
+            color: var(--subtext-color);
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--boarder);
+        }
+
+        td {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--boarder);
+        }
+
+        .price-up { color: var(--secondary); }
+        .price-down { color: var(--danger); }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--card-color); border-radius: 4px; }
+
+        @media(max-width: 900px) {
+            .dashboard-container { grid-template-columns: 1fr; height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Stock Analysis <span>Dashboard</span></h1>
+            <div style="font-size: 0.9rem; color: var(--subtext-color)">DSA Engine: JS Simulation Mode</div>
+        </header>
+
+        <!-- Chart Section -->
+        <div class="card chart-section">
+            <h2 style="margin-bottom: 20px;">Performance Overview</h2>
+            <div style="position: relative; height: 100%; min-height: 400px; width:100%">
+                <canvas id="stockChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Right Side: Controls & History -->
+        <div class="input-section">
+            
+            <!-- Data Input -->
+            <div class="card">
+                <h3>Analysis Input</h3>
+                <p style="color: var(--subtext-color); font-size: 0.85rem; margin-bottom: 15px;">
+                    Enter at least 14 days of historical prices (comma separated) to calculate RSI.
+                </p>
+                <div class="form-group">
+                    <label>Historical Prices</label>
+                    <textarea id="priceInput" rows="3" placeholder="100, 102, 105, 110, 108..."></textarea>
+                </div>
+                <button onclick="updateGraph()" style="width: 100%; margin-top: 10px;">Generate Graph</button>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="card" style="flex-grow: 1;">
+                <h3>Transaction History</h3>
+                
+                <!-- Simple Add Form -->
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="transToken" placeholder="SYM" style="width: 80px;">
+                    <input type="text" id="transPrice" placeholder="Price">
+                    <button onclick="addTransaction()" style="padding: 10px;">+</button>
+                </div>
+
+                <div class="history-list">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Symbol</th>
+                                <th style="text-align: right;">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transTable">
+                            <tr>
+                                <td><span style="color:var(--secondary)">BUY</span></td>
+                                <td>TCS</td>
+                                <td style="text-align: right;">3500.00</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color:var(--primary)">UPDATE</span></td>
+                                <td>RELIANCE</td>
+                                <td style="text-align: right;">2400.00</td>
+                            </tr>
+                            <tr>
+                                <td><span style="color:var(--danger)">SELL</span></td>
+                                <td>INFY</td>
+                                <td style="text-align: right;">1500.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let myChart;
+
+        // Default Data
+        const defaultData = [100, 102, 105, 108, 112, 110, 115, 118, 122, 120, 118, 115, 112, 110, 108, 105];
+
+        // --- MATH FUNCTIONS (Simulating C backend) ---
+        
+        function calculateSMA(data, period) {
+            let sma = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < period - 1) {
+                    sma.push(null); // Not enough data
+                    continue;
+                }
+                let sum = 0;
+                for (let j = 0; j < period; j++) {
+                    sum += data[i - j];
+                }
+                sma.push(sum / period);
+            }
+            return sma;
+        }
+
+        function calculateRSI(data, period) {
+            let rsi = [];
+            let gains = 0;
+            let losses = 0;
+
+            // First RSI needs 'period' + 1 data points to calculate change
+            // We'll just pad the start with nulls
+            for(let i=0; i < data.length; i++) {
+                if (i <= period) {
+                    rsi.push(null);
+                    continue;
+                }
+                
+                // Simple RSI calculation for visualization
+                // Note: Real RSI uses smoothed averages, this is a simplified window
+                /* 
+                 * Standard formula: 
+                 * RS = Avg Gain / Avg Loss
+                 * RSI = 100 - (100 / (1 + RS))
+                 */
+                 
+                 let avgGain = 0;
+                 let avgLoss = 0;
+                 
+                 for(let j=0; j < period; j++) {
+                     let change = data[i-j] - data[i-j-1];
+                     if(change > 0) avgGain += change;
+                     else avgLoss += Math.abs(change);
+                 }
+                 
+                 avgGain /= period;
+                 avgLoss /= period;
+                 
+                 if (avgLoss === 0) {
+                     rsi.push(100);
+                 } else {
+                     let rs = avgGain / avgLoss;
+                     rsi.push(100 - (100 / (1 + rs)));
+                 }
+            }
+            return rsi;
+        }
+
+        // --- CHART & UI ---
+
+        function initChart() {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            
+            // Set input default
+            document.getElementById('priceInput').value = defaultData.join(', ');
+
+            const labels = defaultData.map((_, i) => `Day ${i + 1}`);
+            const sma = calculateSMA(defaultData, 5);
+            const rsi = calculateRSI(defaultData, 14);
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Stock Price',
+                            data: defaultData,
+                            borderColor: '#7f5af0',
+                            backgroundColor: 'rgba(127, 90, 240, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'SMA (5)',
+                            data: sma,
+                            borderColor: '#2cb67d',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'RSI (14)',
+                            data: rsi,
+                            borderColor: '#ef4565',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            yAxisID: 'y1' // Separate axis for RSI
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94a1b2' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a1b2' }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a1b2' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            grid: { drawOnChartArea: false }, // only want the grid lines for one axis to show up
+                            ticks: { color: '#ef4565' }
+                        },
+                    }
+                }
+            });
+        }
+
+        function updateGraph() {
+            const input = document.getElementById('priceInput').value;
+            const dataArr = input.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+            
+            if (dataArr.length < 5) {
+                alert("Please enter more data points.");
+                return;
+            }
+
+            const labels = dataArr.map((_, i) => `Day ${i + 1}`);
+            const sma = calculateSMA(dataArr, 5);
+            const rsi = calculateRSI(dataArr, 14);
+
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].data = dataArr;
+            myChart.data.datasets[1].data = sma;
+            myChart.data.datasets[2].data = rsi;
+            
+            myChart.update();
+        }
+
+        function addTransaction() {
+            const sym = document.getElementById('transToken').value.toUpperCase();
+            const price = document.getElementById('transPrice').value;
+
+            if (!sym || !price) return;
+
+            const tbody = document.getElementById('transTable');
+            const row = document.createElement('tr');
+            
+            row.innerHTML = `
+                <td><span style="color:var(--secondary)">MANUAL</span></td>
+                <td>${sym}</td>
+                <td style="text-align: right;">${parseFloat(price).toFixed(2)}</td>
+            `;
+            
+            // Add to top
+            tbody.insertBefore(row, tbody.firstChild);
+
+            document.getElementById('transToken').value = '';
+            document.getElementById('transPrice').value = '';
+        }
+
+        // Initialize
+        initChart();
+    </script>
+</body>
+</html>

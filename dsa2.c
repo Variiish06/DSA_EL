@@ -740,6 +740,61 @@ void cmdTransactions() {
   printf("]\n");
 }
 
+void cmdClusters() {
+  // 1. Recalculate RSI and build graph (same logic as analyzeIndicators)
+  memset(correlationGraph, 0, sizeof(correlationGraph));
+
+  // Identify correlations
+  for (int i = 0; i < registryCount; i++) {
+    if (calculateRSI(stockRegistry[i], 14) < 30) {
+      for (int j = 0; j < registryCount; j++) {
+        if (i == j)
+          continue;
+        if (calculateRSI(stockRegistry[j], 14) < 30) {
+          correlationGraph[i][j] = 1;
+        }
+      }
+    }
+  }
+
+  // 2. Identify and output clusters
+  printf("[");
+  bool firstCluster = true;
+  bool visited[MAX_STOCKS] = {0};
+
+  for (int i = 0; i < registryCount; i++) {
+    if (!visited[i] && calculateRSI(stockRegistry[i], 14) < 30) {
+      bool clusterFound = false;
+
+      // Check if this stock has any connections
+      for (int j = 0; j < registryCount; j++) {
+        if (correlationGraph[i][j]) {
+          clusterFound = true;
+          break;
+        }
+      }
+
+      // If it's part of a cluster (has connections), output it
+      if (clusterFound) {
+        if (!firstCluster)
+          printf(",");
+        printf("{\"members\": [\"%s\"", stockRegistry[i]->name);
+        visited[i] = true;
+
+        for (int j = 0; j < registryCount; j++) {
+          if (correlationGraph[i][j] && !visited[j]) {
+            printf(", \"%s\"", stockRegistry[j]->name);
+            visited[j] = true;
+          }
+        }
+        printf("]}");
+        firstCluster = false;
+      }
+    }
+  }
+  printf("]\n");
+}
+
 void runApiMode() {
   char buffer[256];
   char cmd[50];
@@ -781,6 +836,8 @@ void runApiMode() {
       cmdTrends(arg1);
     } else if (strcmp(cmd, "TRANSACTIONS") == 0) {
       cmdTransactions();
+    } else if (strcmp(cmd, "CLUSTERS") == 0) {
+      cmdClusters();
     } else {
       printf("{\"error\": \"Unknown command\"}\n");
     }

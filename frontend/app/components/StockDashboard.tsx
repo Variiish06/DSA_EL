@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Stock, Summary, Transaction } from '../types';
 import { Card, CardHeader } from './ui-card';
 import DSAInfo from './DSAInfo';
+import CorrelationGraph from './CorrelationGraph';
 import { TrendingUp, TrendingDown, RefreshCw, Wallet, LayoutDashboard, PlusCircle, DollarSign } from 'lucide-react';
 
 export default function StockDashboard() {
@@ -224,6 +225,10 @@ export default function StockDashboard() {
             </div>
 
             {/* DSA INFO SECTION */}
+            <div className="mb-8">
+                <CorrelationGraph />
+            </div>
+
             <div className="mb-12">
                 <DSAInfo />
             </div>

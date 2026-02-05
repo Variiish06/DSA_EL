@@ -113,6 +113,11 @@ app.get('/api/transactions', async (req, res) => {
     res.json(data);
 });
 
+app.get('/api/clusters', async (req, res) => {
+    const data = await sendCommand('CLUSTERS');
+    res.json(data);
+});
+
 app.listen(PORT, () => {
     console.log(`Backend running on http://localhost:${PORT}`);
 });
