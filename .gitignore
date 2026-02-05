@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+build/
+*.exe
+*.o
+.DS_Store
+.env
+.env.local
