@@ -8,7 +8,6 @@ This project integrates a **C-based DSA engine** (Hash Maps, AVL Trees, Fenwick 
 The core logic resides in `dsa2.c`. You must compile it first.
 
 ```bash
-# In the project root (C:\Users\Kunch\OneDrive\Desktop\SPA)
 gcc dsa2.c -o dsa2
 ```
 *Note: Make sure `dsa2.exe` is created in this folder.*
