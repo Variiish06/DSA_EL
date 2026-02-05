@@ -10,17 +10,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #000000;
-            --card-color: #121212;
-            --text-color: #e0e0e0;
-            --subtext-color: #a0a0a0;
-            --primary: #2962ff;
-            /* Financial Blue */
-            --secondary: #00c853;
-            /* Success Green */
-            --danger: #d50000;
-            /* Failure Red */
-            --boarder: #333333;
+            --bg-color: #0f0e17;
+            --card-color: #151425;
+            --text-color: #fffffe;
+            --subtext-color: #a7a9be;
+            --primary: #7f5af0;
+            /* Highlight Purple */
+            --secondary: #2cb67d;
+            /* Success Green (Keeping financial) */
+            --danger: #ef4565;
+            /* Failure Red (Keeping financial) */
+            --accent: #ff8906;
+            /* Website Accent Orange */
+            --boarder: rgba(255, 255, 255, 0.05);
+            --input-bg: #232136;
         }
 
         * {
@@ -60,6 +63,31 @@
             border-bottom: 1px solid var(--boarder);
             padding-bottom: 20px;
             margin-bottom: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--boarder);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
         }
 
         .header h1 {
@@ -106,11 +134,11 @@
         textarea,
         input {
             width: 100%;
-            background: #1e1e24;
+            background: var(--input-bg);
             border: 1px solid var(--boarder);
-            color: white;
+            color: var(--text-color);
             padding: 12px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-family: inherit;
         }
 
@@ -196,7 +224,12 @@
     <div class="dashboard-container">
         <!-- Header -->
         <header class="header">
-            <h1>Stock Analysis <span>Dashboard</span></h1>
+            <div class="header-left">
+                <a href="/" class="back-btn">
+                    ← Back to Home
+                </a>
+                <h1>Stock Analysis <span>Dashboard</span></h1>
+            </div>
             <div style="font-size: 0.9rem; color: var(--subtext-color)">DSA Engine: JS Simulation Mode</div>
         </header>
 
