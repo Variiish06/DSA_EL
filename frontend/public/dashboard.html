@@ -230,7 +230,7 @@
                 </a>
                 <h1>Stock Analysis <span>Dashboard</span></h1>
             </div>
-            <div style="font-size: 0.9rem; color: var(--subtext-color)">DSA Engine: JS Simulation Mode</div>
+            <div style="font-size: 0.9rem; color: var(--subtext-color)">DSA Engine: Real-time C Backend</div>
         </header>
 
         <!-- Chart Section -->
@@ -278,21 +278,7 @@
                             </tr>
                         </thead>
                         <tbody id="transTable">
-                            <tr>
-                                <td><span style="color:var(--secondary)">BUY</span></td>
-                                <td>TCS</td>
-                                <td style="text-align: right;">3500.00</td>
-                            </tr>
-                            <tr>
-                                <td><span style="color:var(--primary)">UPDATE</span></td>
-                                <td>RELIANCE</td>
-                                <td style="text-align: right;">2400.00</td>
-                            </tr>
-                            <tr>
-                                <td><span style="color:var(--danger)">SELL</span></td>
-                                <td>INFY</td>
-                                <td style="text-align: right;">1500.00</td>
-                            </tr>
+                            <!-- Transactions will be loaded here -->
                         </tbody>
                     </table>
                 </div>
@@ -481,30 +467,36 @@
             myChart.update();
         }
 
-        function addTransaction() {
-            const sym = document.getElementById('transToken').value.toUpperCase();
-            const price = document.getElementById('transPrice').value;
+        async function fetchTransactions() {
+            try {
+                const response = await fetch('http://localhost:5000/api/transactions');
+                const transactions = await response.json();
+                
+                const tbody = document.getElementById('transTable');
+                tbody.innerHTML = ''; // Clear for fresh update or just update diffs
 
-            if (!sym || !price) return;
+                transactions.forEach(t => {
+                    const row = document.createElement('tr');
+                    let color = 'var(--secondary)';
+                    if (t.type === 'UPDATE' || t.type === 'INIT') color = 'var(--primary)';
+                    if (t.type === 'SELL') color = 'var(--danger)';
 
-            const tbody = document.getElementById('transTable');
-            const row = document.createElement('tr');
-
-            row.innerHTML = `
-                <td><span style="color:var(--secondary)">MANUAL</span></td>
-                <td>${sym}</td>
-                <td style="text-align: right;">${parseFloat(price).toFixed(2)}</td>
-            `;
-
-            // Add to top
-            tbody.insertBefore(row, tbody.firstChild);
-
-            document.getElementById('transToken').value = '';
-            document.getElementById('transPrice').value = '';
+                    row.innerHTML = `
+                        <td><span style="color:${color}">${t.type}</span></td>
+                        <td>${t.symbol}</td>
+                        <td style="text-align: right;">${parseFloat(t.price).toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (e) {
+                console.error("Failed to fetch transactions", e);
+            }
         }
 
         // Initialize
         initChart();
+        fetchTransactions();
+        setInterval(fetchTransactions, 2000); // Poll every 2s
     </script>
 </body>
 

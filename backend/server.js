@@ -10,63 +10,90 @@ const PORT = 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Spawn the C process
-// Ensure dsa2.exe exists in the parent directory or same directory. 
-// Adjust path as needed.
-const dsaPath = path.join(__dirname, '../dsa2'); // Assumes compiled dsa2.exe is in project root
-console.log(`Spawning C process at: ${dsaPath}`);
+const dsaExecutable = process.platform === 'win32' ? 'dsa2.exe' : 'dsa2';
+const dsaPath = path.join(__dirname, '..', dsaExecutable);
 
-const dsaProcess = spawn(dsaPath, ['--api']);
-
-dsaProcess.on('error', (err) => {
-    console.error('Failed to start C process:', err);
-    console.log('HINT: Did you forget to compile? Run: gcc dsa2.c -o dsa2');
-});
-
-dsaProcess.on('close', (code) => {
-    console.log(`C process exited with code ${code}`);
-});
-
-// Buffer to store data from C stdout until a newline is found
+// --- RESILIENT COMMUNICATION LAYER ---
+let isCProcessing = false;
+let commandQueue = [];
 let dataBuffer = '';
-let responseQueue = []; // Queue of callbacks waiting for responses
+let responseQueue = [];
 
-dsaProcess.stdout.on('data', (data) => {
-    dataBuffer += data.toString();
+function spawnCProcess() {
+    console.log(`Spawning C process at: ${dsaPath}`);
+    const process = spawn(dsaPath, ['--api']);
 
-    // Process all complete lines
-    let newlineIdx;
-    while ((newlineIdx = dataBuffer.indexOf('\n')) !== -1) {
-        const line = dataBuffer.substring(0, newlineIdx).trim();
-        dataBuffer = dataBuffer.substring(newlineIdx + 1);
+    process.on('error', (err) => {
+        console.error('Failed to start C process:', err);
+    });
 
-        if (line) {
-            console.log(`[C OUTPUT]: ${line}`);
-            // Resolve the oldest matching request
-            if (responseQueue.length > 0) {
-                const { resolve } = responseQueue.shift();
-                try {
-                    const json = JSON.parse(line);
-                    resolve(json);
-                } catch (e) {
-                    console.error('Failed to parse JSON:', e, 'Line:', line);
-                    resolve({ error: 'Invalid JSON from C backend', raw: line });
+    process.on('close', (code) => {
+        console.log(`C process exited with code ${code}. Restarting...`);
+        // Clear queue on crash to avoid hanging requests
+        while (responseQueue.length > 0) {
+            const { reject } = responseQueue.shift();
+            reject(new Error('C process crashed'));
+        }
+        isCProcessing = false;
+        setTimeout(() => { dsaProcess = spawnCProcess(); }, 1000);
+    });
+
+    process.stdout.on('data', (data) => {
+        dataBuffer += data.toString();
+        let newlineIdx;
+        while ((newlineIdx = dataBuffer.indexOf('\n')) !== -1) {
+            const line = dataBuffer.substring(0, newlineIdx).trim();
+            dataBuffer = dataBuffer.substring(newlineIdx + 1);
+
+            if (line) {
+                console.log(`[C OUTPUT]: ${line}`);
+                if (responseQueue.length > 0) {
+                    const { resolve } = responseQueue.shift();
+                    try {
+                        const json = JSON.parse(line);
+                        resolve(json);
+                    } catch (e) {
+                        console.error('Failed to parse JSON:', e, 'Line:', line);
+                        resolve({ error: 'Invalid JSON from C backend', raw: line });
+                    }
                 }
+                isCProcessing = false;
+                processNextCommand();
             }
         }
-    }
-});
+    });
 
-dsaProcess.stderr.on('data', (data) => {
-    console.error(`[C ERROR]: ${data}`);
-});
+    process.stderr.on('data', (data) => {
+        console.error(`[C ERROR]: ${data}`);
+    });
 
-// Helper to send command and wait for response
-function sendCommand(cmd) {
-    return new Promise((resolve, reject) => {
-        responseQueue.push({ resolve, reject });
+    return process;
+}
+
+let dsaProcess = spawnCProcess();
+
+function processNextCommand() {
+    if (isCProcessing || commandQueue.length === 0) return;
+
+    isCProcessing = true;
+    const { cmd, resolve, reject } = commandQueue.shift();
+    responseQueue.push({ resolve, reject });
+
+    try {
         console.log(`[SENDING CMD]: ${cmd}`);
         dsaProcess.stdin.write(cmd + '\n');
+    } catch (e) {
+        console.error('Failed to write to C stdin:', e);
+        const { reject } = responseQueue.shift();
+        reject(e);
+        isCProcessing = false;
+    }
+}
+
+function sendCommand(cmd) {
+    return new Promise((resolve, reject) => {
+        commandQueue.push({ cmd, resolve, reject });
+        processNextCommand();
     });
 }
 
@@ -86,10 +113,12 @@ app.post('/api/stocks', async (req, res) => {
 });
 
 app.post('/api/price', async (req, res) => {
-    const { name, newPrice } = req.body;
+    const { name, newPrice, newQty } = req.body;
     if (!name || newPrice === undefined) return res.status(400).json({ error: 'Missing fields' });
 
-    const data = await sendCommand(`UPDATE ${name} ${newPrice}`);
+    // Ensure qty is a number, default to -1 (C engine should ignore if -1 or 0)
+    const qty = newQty !== undefined ? Number(newQty) : -1;
+    const data = await sendCommand(`UPDATE ${name} ${newPrice} ${qty}`);
     res.json(data);
 });
 
