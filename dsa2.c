@@ -451,7 +451,7 @@ void addStock(char *name, float buyPrice, int qty) {
   insertTrie(name);
   stockRegistry[registryCount++] = s;
 
-  logTransaction("INIT", name, buyPrice);
+  logTransaction("BUY", name, buyPrice);
   // printf("Stock %s added at %.2f\n", name, buyPrice);
 }
 
@@ -822,10 +822,14 @@ void runApiMode() {
       addStock(arg1, arg2, arg4);
       printf("{\"status\": \"ok\", \"message\": \"Stock Added\"}\n");
     } else if (strcmp(cmd, "UPDATE") == 0) {
-      // UPDATE Name Price Qty
-      sscanf(buffer, "%s %s %f %d", cmd, arg1, &arg2, &arg4);
-      updateStockPrice(arg1, arg2, arg4, false); // false = not auto
-      printf("{\"status\": \"ok\", \"message\": \"Price & Qty Updated\"}\n");
+      arg4 = -1; // Default to no quantity update
+      int n = sscanf(buffer, "%s %s %f %d", cmd, arg1, &arg2, &arg4);
+      if (n >= 3) {
+        updateStockPrice(arg1, arg2, arg4, false);
+        printf("{\"status\": \"ok\", \"message\": \"Price Updated\"}\n");
+      } else {
+        printf("{\"error\": \"Invalid UPDATE arguments\"}\n");
+      }
     } else if (strcmp(cmd, "SUMMARY") == 0) {
       cmdSummary();
     } else if (strcmp(cmd, "TOP") == 0) {
